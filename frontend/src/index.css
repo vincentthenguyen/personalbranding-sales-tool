@@ -1,0 +1,71 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ── Base reset ─────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; }
+
+html { scroll-behavior: smooth; -webkit-font-smoothing: antialiased; }
+
+body {
+  margin: 0;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  background: #060A14;
+  color: #E2E8F5;
+  min-height: 100vh;
+}
+
+/* ── Input focus states ─────────────────────────────────────────── */
+input:focus {
+  outline: none;
+  border-color: #4B83EF !important;
+  box-shadow: 0 0 0 3px rgba(75, 131, 239, 0.15);
+}
+
+/* ── Scrollbar ──────────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: #060A14; }
+::-webkit-scrollbar-thumb { background: #1A2540; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #2A3F6A; }
+
+/* ── Selection ──────────────────────────────────────────────────── */
+::selection { background: rgba(75, 131, 239, 0.25); color: #E2E8F5; }
+
+/* ── Spinner animation ──────────────────────────────────────────── */
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+.animate-spin { animation: spin 1s linear infinite; }
+
+/* ── Fade-up entrance ───────────────────────────────────────────── */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.fade-up { animation: fadeUp 0.5s ease forwards; }
+
+/* ── Staggered children ─────────────────────────────────────────── */
+.stagger > * { opacity: 0; animation: fadeUp 0.45s ease forwards; }
+.stagger > *:nth-child(1) { animation-delay: 0ms; }
+.stagger > *:nth-child(2) { animation-delay: 60ms; }
+.stagger > *:nth-child(3) { animation-delay: 120ms; }
+.stagger > *:nth-child(4) { animation-delay: 180ms; }
+.stagger > *:nth-child(5) { animation-delay: 240ms; }
+.stagger > *:nth-child(6) { animation-delay: 300ms; }
+.stagger > *:nth-child(7) { animation-delay: 360ms; }
+
+/* ── Subtle grid background on landing ─────────────────────────── */
+.bg-grid {
+  background-image:
+    linear-gradient(rgba(75,131,239,0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(75,131,239,0.04) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+
+/* ── Line clamp utility ─────────────────────────────────────────── */
+.line-clamp-1 {
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}

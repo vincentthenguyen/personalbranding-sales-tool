@@ -1,0 +1,7 @@
+openai>=1.30.0
+firecrawl-py>=1.0.0
+python-dotenv>=1.0.0
+requests>=2.31.0
+
+# Legacy (used by generate_sales_prep_legacy.py only)
+anthropic>=0.40.0

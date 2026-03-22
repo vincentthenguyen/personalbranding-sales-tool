@@ -1,0 +1,26 @@
+# Environment variables
+.env
+
+# Intermediate/temp files
+.tmp/
+
+# Google OAuth credentials
+credentials.json
+token.json
+
+# Node / frontend
+frontend/node_modules/
+frontend/dist/
+frontend/.netlify/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+dist/
+.pytest_cache/
+
+# macOS
+.DS_Store
