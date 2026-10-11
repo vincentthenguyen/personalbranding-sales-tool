@@ -219,6 +219,25 @@ def serpapi_search(query: str, tbm: str = None, num: int = 10) -> dict:
     return resp.json()
 
 
+def serpapi_maps_search(query: str) -> dict:
+    """Run a SerpApi Google Maps search. Returns JSON response dict."""
+    params = {
+        "engine":  "google_maps",
+        "q":       query,
+        "api_key": SERPAPI_API_KEY,
+        "hl":      "en",
+        "gl":      "us",
+        "type":    "search",
+    }
+    resp = requests.get(
+        "https://serpapi.com/search.json",
+        params=params,
+        timeout=20,
+    )
+    resp.raise_for_status()
+    return resp.json()
+
+
 def extract_news(data: dict) -> tuple[int, list[dict]]:
     """
     From a SerpApi news search result, return (count, mentions_list).
@@ -242,25 +261,51 @@ def extract_news(data: dict) -> tuple[int, list[dict]]:
 
 def extract_reviews(data: dict, firm_name_hint: str) -> tuple[int | None, float | None]:
     """
-    Pull review count and rating from SerpApi local results or knowledge graph.
+    Pull review count and rating from SerpApi results.
+    Handles:
+      - Google Maps direct match  → place_results (dict)
+      - Google Maps multi-result  → local_results (list)
+      - Regular Google search     → knowledge_graph or local_results.places
     """
+    hint = firm_name_hint.lower()[:15]
+
+    # Google Maps engine: direct match → place_results
+    place = data.get("place_results", {})
+    if place and (place.get("rating") or place.get("reviews")):
+        r = place.get("reviews") or place.get("user_ratings_total")
+        g = place.get("rating")
+        return (int(r) if r else None), (float(g) if g else None)
+
+    # Google Maps engine: multiple results → local_results as flat list
+    local_list = data.get("local_results", [])
+    if isinstance(local_list, list) and local_list:
+        # First try name-matched result
+        for item in local_list:
+            if hint in item.get("title", "").lower():
+                r = item.get("reviews")
+                g = item.get("rating")
+                if r or g:
+                    return (int(r) if r else None), (float(g) if g else None)
+        # Fallback: first result
+        p = local_list[0]
+        r, g = p.get("reviews"), p.get("rating")
+        return (int(r) if r else None), (float(g) if g else None)
+
+    # Regular Google search: knowledge_graph
     kg = data.get("knowledge_graph", {})
     try:
         if kg.get("rating") and kg.get("reviews"):
             r = kg["reviews"]
             if isinstance(r, (int, float)):
                 return int(r), float(kg["rating"])
-            # SerpApi sometimes puts a URL or text here - skip if not numeric
     except (ValueError, TypeError):
         pass
 
-    places = data.get("local_results", {}).get("places", [])
-    hint = firm_name_hint.lower()[:12]
-    for place in places:
-        if hint in place.get("title", "").lower():
-            return place.get("reviews"), place.get("rating")
-
-    # Fallback: first local result
+    # Regular Google search: local_results.places (dict form)
+    places = data.get("local_results", {}).get("places", []) if isinstance(data.get("local_results"), dict) else []
+    for item in places:
+        if hint in item.get("title", "").lower():
+            return item.get("reviews"), item.get("rating")
     if places:
         p = places[0]
         return p.get("reviews"), p.get("rating")
@@ -496,9 +541,14 @@ def run_research(prospect_input: str) -> Path:
     # --- Step 1B: Prospect Research ---
     print("[1B] SerpApi: prospect research...")
 
-    print(f"  [Searching: \"{firm_name}\" Google reviews]")
-    reviews_data = serpapi_search(f'"{firm_name}" {city} {state}'.strip())
+    print(f"  [Searching: \"{firm_name}\" Google Maps]")
+    maps_query = f"{firm_name} {city} {state}".strip()
+    reviews_data = serpapi_maps_search(maps_query)
     review_count, rating = extract_reviews(reviews_data, firm_name)
+    # Fallback to regular search if maps returned nothing
+    if not review_count and not rating:
+        fallback = serpapi_search(f'"{firm_name}" {city} {state}'.strip())
+        review_count, rating = extract_reviews(fallback, firm_name)
 
     print(f"  [Searching: \"{firm_name}\" news]")
     prospect_news_data = serpapi_search(f'"{firm_name}"', tbm='nws', num=20)
